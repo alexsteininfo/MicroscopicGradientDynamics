@@ -56,5 +56,5 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-lines!(discrete_x. soln[25,:])
+lines!(discrete_x, soln[25,:])
 display(fig1)

@@ -18,7 +18,8 @@ ri = 0.
 h = 1.
 
 # birth and death rates
-birthRate(n,b0,K) = b0*(1 − n/K)
+# birthRate(n,b0,K) = b0*(1 − n/K)
+birthRate(n,b0,K) = b0
 deathRate(h,u,d0,ri,α) = d0 + h/(ri + u*α)
 
 # 1D PDE and boundary conditions

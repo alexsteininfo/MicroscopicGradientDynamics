@@ -1,3 +1,6 @@
+# title: numerical evalutation of continuous trait space PDE
+# author: Nathaniel Mon Pere
+
 using ModelingToolkit, MethodOfLines, OrdinaryDiffEq, DomainSets, Parameters
 
 # numerical parameters
@@ -6,7 +9,7 @@ params = (
     b0 = 1.2,
     d0 = 0.2,
     # l = 0.1,
-    l=√(0.1),
+    l = 0.01, #√(0.1),
     p = 0.5,
 )
 @unpack b0, d0, l, p = params
@@ -29,8 +32,8 @@ Duu = Differential(u)^2
 β(u) = b0
 # δ(u) = d0
 δ(u) = d0 + h/(ri + u*α) # adaptive therapy model
-ρ₊(u) = p
-ρ₋(u) = p
+ρ₊(u) = p*u
+ρ₋(u) = p*u
 
 # general phenotype switching equation
 eq  = Dt(n(t, u)) ~ 
@@ -77,8 +80,9 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-for t in [1,10,20,30,40,50]
+for t in [1,2,3,4,5]
     lines!(discrete_u, soln[t,:], label="time $t")
 end
 axislegend(position=:lt)
-display(fig1)
+save("MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
+#display(fig1)

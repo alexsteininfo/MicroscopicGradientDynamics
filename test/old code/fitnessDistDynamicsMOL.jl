@@ -1,3 +1,6 @@
+### title: numerical evalutation of PDEs with MethodsofLines
+### author: Nathaniel Mon Pere
+
 using ModelingToolkit, MethodOfLines, OrdinaryDiffEq, DomainSets
 
 # Parameters, variables, and derivatives

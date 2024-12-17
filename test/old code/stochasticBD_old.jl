@@ -1,5 +1,5 @@
-#title: a stochastic gfunction approach
-#author: alexander stein
+# title: birth-death process with phenotypic switching
+# author: alexander stein
 
 #################
 ### libraries ###
@@ -22,7 +22,7 @@ Random.seed!(1)
 
 # Initial population size
 num_types = 100
-X0 = [10 for i in 1:num_types]    # 10 cells of each of the 500 types at the beginning
+X0 = [100 for i in 1:num_types]    # 10 cells of each of the 500 types at the beginning
 u0 = [1.0*i/num_types for i in 1:num_types]
 
 # Parameters
@@ -220,8 +220,8 @@ end
 ### Main ###
 ############
 
-maxtime = 500
-maxsize = 10e6
+maxtime = 5
+maxsize = 10e7
 maxsteps = 1e4
 tseries, Xseries = run(maxtime, maxsize, maxsteps)
 

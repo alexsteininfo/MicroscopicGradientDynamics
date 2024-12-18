@@ -32,8 +32,8 @@ Duu = Differential(u)^2
 β(u) = b0
 # δ(u) = d0
 δ(u) = d0 + h/(ri + u*α) # adaptive therapy model
-ρ₊(u) = p*u
-ρ₋(u) = p*u
+ρ₊(u) = p
+ρ₋(u) = p
 
 # general phenotype switching equation
 eq  = Dt(n(t, u)) ~ 
@@ -42,7 +42,7 @@ eq  = Dt(n(t, u)) ~
     l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
 
 bcs = [
-    n(0, u) ~ 1.,
+    n(0, u) ~ 100.,
     Du(n(t, 0)) ~ 0.0,
     Du(n(t, 1)) ~ 0.0
 ]

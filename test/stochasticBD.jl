@@ -9,18 +9,18 @@ using CairoMakie
 
 ### Initial condition
 kspace = 1:100
-n_init = [10 for k in kspace]
+n_init = [100 for k in kspace]
 t_init = 0.0
 t_eps = 1.0
 
 ### Stopping criteria
 pop_max = 500000 #+Inf
 pop_min = 0
-t_max = 2.0
+t_max = 5.0
 
 ### Growth functions
 b0 = 1.2
-b(k) = b0*k*l
+b(k) = b0
 
 d0 = 0.2
 l = 0.01
@@ -64,12 +64,11 @@ end
 #######################
 
 include("gillespiealgorithm.jl")
+
 #run(maxtime::Float64 = Inf, minsize::Int64 = 0, maxsize::Int64 = Inf, maxsteps::Int64 = 1e6)
 @time tseries, nseries = run(t_max, pop_min, pop_max, Int32(1e6))
 
 plot_distribution()
-
-
 
 
 

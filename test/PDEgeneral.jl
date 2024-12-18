@@ -42,7 +42,7 @@ eq  = Dt(n(t, u)) ~
     l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
 
 bcs = [
-    n(0, u) ~ 100.,
+    n(0, u) ~ 10000.,
     Du(n(t, 0)) ~ 0.0,
     Du(n(t, 1)) ~ 0.0
 ]
@@ -70,9 +70,9 @@ sol = solve(prob, Tsit5(), saveat=0.2)
 using CairoMakie
 
 # Plot results and compare with exact solution
-discrete_u = sol[u]
-discrete_t = sol[t]
-soln = sol[n(t, u)]
+_u = sol[u]
+_t = sol[t]
+n_t_u = sol[n(t, u)]
 
 fig1 = Figure()
 Axis(
@@ -80,9 +80,7 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-for t in [1,2,3,4,5]
-    lines!(discrete_u, soln[t,:], label="time $t")
-end
-axislegend(position=:lt)
-save("MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
-#display(fig1)
+lines!(_u, n_t_u[findfirst(_t.==5),:], label="t=$t")
+# axislegend(position=:lt)
+# save("MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
+display(fig1)

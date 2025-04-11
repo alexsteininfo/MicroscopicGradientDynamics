@@ -6,11 +6,10 @@ using ModelingToolkit, MethodOfLines, OrdinaryDiffEq, DomainSets, Parameters
 # numerical parameters
 # iginore the whole packing/unpacking thing for now. Becomes useful when everything gets more complex
 params = (
-    b0 = 1.2,
-    d0 = 0.2,
-    # l = 0.1,
+    b0 = 0.5,
+    d0 = 0.1,
     l = 0.01, #√(0.1),
-    p = 0.5,
+    p = 0.0,
 )
 @unpack b0, d0, l, p = params
 paramsAdaptiveTherapy = (
@@ -29,11 +28,10 @@ Dt = Differential(t)
 Du = Differential(u)
 Duu = Differential(u)^2
 
-β(u) = b0
-# δ(u) = d0
-δ(u) = d0 + h/(ri + u*α) # adaptive therapy model
-ρ₊(u) = p
-ρ₋(u) = p
+β(u) = b0 + 0.1*u
+δ(u) = d0 #d0 + h/(ri + u*α) # adaptive therapy model
+ρ₊(u) = 0.5
+ρ₋(u) = 0.5
 
 # general phenotype switching equation
 eq  = Dt(n(t, u)) ~ 
@@ -42,14 +40,14 @@ eq  = Dt(n(t, u)) ~
     l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
 
 bcs = [
-    n(0, u) ~ 10000.,
+    n(0, u) ~ 50.,
     Du(n(t, 0)) ~ 0.0,
     Du(n(t, 1)) ~ 0.0
 ]
 
 # Space and time domains
 domains = [
-    t ∈ (0.0, 10.0),
+    t ∈ (0.0, 20.0),
     u ∈ (0.0, 1.0),
 ]
 
@@ -80,7 +78,9 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-lines!(_u, n_t_u[findfirst(_t.==5),:], label="t=$t")
+for i in 1:5
+    lines!(_u, n_t_u[findfirst(_t.==i*4.),:], label="t=$t")
+end
 # axislegend(position=:lt)
-# save("MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
-display(fig1)
+save("/Users/stein02/Desktop/github/MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
+#display(fig1)

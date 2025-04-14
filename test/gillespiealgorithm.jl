@@ -24,8 +24,8 @@ using StatsBase: sample, Weights
 # t_max
 
 ### Growth functions
-# b(k) birth function
-# d(k) death function
+# b(k,N) birth function
+# d(k,N) death function
 
 ### Transition functions
 # rp(k) upward transition function
@@ -42,7 +42,7 @@ num_rates = 4*num_types
 ### Sanity check
 if(pop_max <= N_init || pop_min >= N_init || t_max <= t_init)
     println("ERROR: Ill defined stopping criteria")
-elseif( all(k -> b(k) < 0, kspace) || all(k -> d(k) < 0, kspace) )
+elseif( all(k -> b(k,N) < 0, kspace) || all(k -> d(k,N) < 0, kspace) )
     println("ERROR: Ill defined growth rate functions")
 elseif( all(k -> rp(k) < 0, kspace) || all(k -> rm(k) < 0, kspace) )
     println("ERROR: Ill defined transition rate functions")
@@ -68,8 +68,8 @@ function create_rates!()
     gilrates_rm = []
 
     for k in kspace 
-        push!(gilrates_b, b(k)*n[k])
-        push!(gilrates_d, d(k)*n[k])
+        push!(gilrates_b, b(k,N)*n[k])
+        push!(gilrates_d, d(k,N)*n[k])
         push!(gilrates_rp, rp(k)*n[k])
         push!(gilrates_rm, rm(k)*n[k])
     end
@@ -85,32 +85,26 @@ end
 function update_rates!(k_update, eventtype)
 
     # update the rates of the k-th type in case of any event
-    gil_rates[k_update] = b(k_update)*n[k_update]
-    gil_rates[k_update+num_types] = d(k_update)*n[k_update]
+    gil_rates[k_update]             = b(k_update,N)*n[k_update]
+    gil_rates[k_update+num_types]   = d(k_update,N)*n[k_update]
     gil_rates[k_update+2*num_types] = rp(k_update)*n[k_update]
     gil_rates[k_update+3*num_types] = rm(k_update)*n[k_update]
 
-    if(eventtype == 1)
-        global N = N+1
-    elseif(eventtype == 2)
-        global N = N-1
-    # update the rates of the k+1-th type if not the largest k
-    elseif(eventtype == 3 && k_update!=num_types)   # up transition
-        gil_rates[k_update+1] = b(k_update+1)*n[k_update+1]
-        gil_rates[k_update+1+num_types] = d(k_update+1)*n[k_update+1]
-        gil_rates[k_update+1+2*num_types] = rp(k_update+1)*n[k_update+1]
-        gil_rates[k_update+1+3*num_types] = rm(k_update+1)*n[k_update+1]
-    # update the rates of the  k-1-th type if not the smallest k
+    
+    if(eventtype == 3 && k_update!=num_types)   # up transition
+        gil_rates[k_update+1]               = b(k_update+1,N)*n[k_update+1]
+        gil_rates[k_update+1+num_types]     = d(k_update+1,N)*n[k_update+1]
+        gil_rates[k_update+1+2*num_types]   = rp(k_update+1)*n[k_update+1]
+        gil_rates[k_update+1+3*num_types]   = rm(k_update+1)*n[k_update+1]
     elseif(eventtype == 4 && k_update!=1)   # down transition
-        gil_rates[k_update-1] = b(k_update-1)*n[k_update-1]
-        gil_rates[k_update-1+num_types] = d(k_update)*n[k_update-1]
-        gil_rates[k_update-1+2*num_types] = rp(k_update-1)*n[k_update-1]
-        gil_rates[k_update-1+3*num_types] = rm(k_update-1)*n[k_update-1]
+        gil_rates[k_update-1]               = b(k_update-1,N)*n[k_update-1]
+        gil_rates[k_update-1+num_types]     = d(k_update,N)*n[k_update-1]
+        gil_rates[k_update-1+2*num_types]   = rp(k_update-1)*n[k_update-1]
+        gil_rates[k_update-1+3*num_types]   = rm(k_update-1)*n[k_update-1]
     end
 
     gil_rates[3*num_types] = 0
     gil_rates[3*num_types+1] = 0
-
 
     gil_sum = sum(gil_rates)
 
@@ -169,7 +163,7 @@ end
 #############################
 
 function save!()
-    push!(nseries, n)
+    push!(nseries, copy(n))
     push!(tseries, t)
 end
 
@@ -211,7 +205,7 @@ function run(maxtime, minsize, maxsize, maxsteps)
     global t = t_init
 
     # Initialize saving
-    global nseries = [n]
+    global nseries = [copy(n)]
     global tseries = [t]
 
     # Initialize helping variables
@@ -230,8 +224,8 @@ function run(maxtime, minsize, maxsize, maxsteps)
         update_state!(tau, k_update, eventtype)
         # Update gillsepie rates
         #update_rates!(gil_rates, gil_sum)
-        #create_rates!()
-        update_rates!(k_update, eventtype)
+        create_rates!()
+        #update_rates!(k_update, eventtype)
         # Test stopping criteria
         if(stop(maxtime, minsize, maxsize, maxsteps))
             save!()

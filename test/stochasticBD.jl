@@ -9,6 +9,8 @@ using CairoMakie
 
 ### Initial condition
 kspace = 1:100
+uspace = range(0,1, step=0.01)
+length(uspace)
 n_init = [100 for k in kspace]
 t_init = 0.0
 t_eps = 1.0
@@ -55,7 +57,7 @@ function plot_distribution()
     #hist!(exponents, color = (ColPaired[2], 0.6), normalization=:pdf, bins=20)
     #axislegend(ax, labelsize=25, framecolor = :white)
 
-    save("MicroscopicGradientDynamics/test/figures/distributions.png", f)
+    # save("~/figures/distributions.png", f)
 end
 
 
@@ -68,9 +70,18 @@ include("gillespiealgorithm.jl")
 #run(maxtime::Float64 = Inf, minsize::Int64 = 0, maxsize::Int64 = Inf, maxsteps::Int64 = 1e6)
 @time tseries, nseries = run(t_max, pop_min, pop_max, Int32(1e6))
 
-plot_distribution()
+# plot_distribution()
 
+f = Figure()
+ax = Axis(f[1,1],
+#xticks = ([0,1000,2000,3000,4000]),
+xlabel = "Trait", xlabelsize = 30, xticklabelsize = 25,
+ylabel = "Density", ylabelsize = 30, yticklabelsize = 25
+)
 
+lines!(ax, kspace, nseries[1])
+lines!(ax, kspace, nseries[end])
+display(f)
 
 
 

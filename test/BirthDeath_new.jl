@@ -1,4 +1,4 @@
-# title: Birth-death process with mutations
+# title: Birth-death process with transitions
 # author: alexander stein
 
 
@@ -32,26 +32,22 @@ t = default_t()
 
 reactions = Reaction[]
 
+
 for i in 1:n
     push!(reactions, Reaction(zerorate, [S[i]], [S[i]], [1], [2]))
 end
 push!(reactions, Reaction(zerorate, [N], [N], [1], [2]))
 push!(reactions, Reaction(zerorate, [E], [E], [1], [2]))
- 
+
 for i in 1:n
     push!(reactions, Reaction(birthrates[i], [S[i]], [S[i],N], [1], [2,1]))
     push!(reactions, Reaction(deathrates[i], [S[i]], [S[i],N], [1], [0,-1]))
+    push!(reactions, Reaction(competitionrates[i], [S[i],N], [S[i],N], [1], [0,-1]))
+    #push!(reactions, Reaction(treatmentrates[i], [S[i]], [S[i],N], [1], [0,-1]))
     i!=1 ? push!(reactions, Reaction(rhominus[i], [S[i]], [S[i-1]])) : push!(reactions, Reaction(rhoplus[n], [E], [E], [1], [2]))
     i!=n ? push!(reactions, Reaction(rhoplus[i], [S[i]], [S[i+1]])) : push!(reactions, Reaction(rhominus[1], [E], [E], [1], [2]))
 end
 
-#=
-for i in 1:n
-    push!(reactions, Reaction(birthrates[i], [S[i]], [S[i]], [1], [2]))
-    push!(reactions, Reaction(deathrates[i], [S[i]], [S[i]], [1], [0]))
-end
-=#
-#@named rn = ReactionSystem(reactions, t, S, (birthrates, deathrates))
 @named rn = ReactionSystem(reactions, t)
 rn = complete(rn)
 
@@ -59,11 +55,12 @@ p = (:birthrates => [1.0 for i in 1:n], :deathrates => [0.1 for i in 1:n], :rhom
 #p = (:birthrates => [1.0 for i in 1:n], :deathrates => [0.0 for i in 1:n])
 u0 = [50 for k in 1:n]
 u0 = [u0; sum(u0); 1]
-tspan = (0,5.0)
+tspan = (0, 5.0)
 
 prob = DiscreteProblem(rn, u0, tspan, p)
 
-jump_prob = JumpProblem(rn, prob, Direct())
+jump_prob = JumpProblem(rn, prob, Direct(), save_positions = (false,false))
 
-sol = solve(jump_prob, SSAStepper())
+sol = solve(jump_prob, SSAStepper(); saveat = 1.0)
+# specific timepoints can be accessed via sol(t), e.g. sol(1.5)
 

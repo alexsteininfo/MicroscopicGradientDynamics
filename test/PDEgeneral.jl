@@ -3,74 +3,79 @@
 
 using ModelingToolkit, MethodOfLines, OrdinaryDiffEq, DomainSets, Parameters
 
-# numerical parameters
-# iginore the whole packing/unpacking thing for now. Becomes useful when everything gets more complex
-params = (
-    b0 = 0.5,
-    d0 = 0.1,
-    l = 0.01, #√(0.1),
-    p = 0.0,
+function phenotype1DPDE(modelParams::NamedTuple, ctrlParams::NamedTuple)
+    @unpack n0, b0, d0, l, ρUp, ρDown, K = modelParams
+    @unpack t0, tF, du, saveat = ctrlParams
+    @parameters t u
+    @variables n(..) totalPop(..)
+    Dt = Differential(t)
+    Du = Differential(u)
+    Duu = Differential(u)^2
+    uMin = 0.
+    uMax = 1.
+    Iu = Integral(u in DomainSets.ClosedInterval(uMin, uMax))
+    
+    β(u) = b0 + 0.1*u
+    δ(u) = d0
+    # δ(u) = d0 + h/(ri + u*α) # adaptive therapy model: not implemented here
+    γ(u) = (β(u) - δ(u))*(1-totalPop(t,u)/K)
+    ρ₊(u) = ρUp
+    ρ₋(u) = ρDown
+    equations  = [
+        totalPop(t,u) ~ Iu(n(t,u)),
+        Dt(n(t, u)) ~ 
+        ( γ(u) - l*Du(ρ₊(u)) - l*Du(ρ₋(u)) + l^2/2*Duu(ρ₊(u)) + l^2/2*Duu(ρ₋(u)) ) * n(t,u) + 
+        l*( -ρ₊(u) + ρ₋(u) + l*Du(ρ₊(u)) + l*Du(ρ₋(u)) ) * Du(n(t,u)) +
+        l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
+    ]
+    bcs = [
+        n(0.0, u) ~ n0,
+        Du(n(t, uMin)) ~ 0.0,
+        Du(n(t, uMax)) ~ 0.0
+    ]
+    domains = [
+        t ∈ Interval(t0, tF),
+        u ∈ Interval(uMin, uMax),
+    ]
+    @named pdesys = PDESystem(equations, bcs, domains, [t, u], [n(t,u), totalPop(t,u)])
+    # @time @named pdesys = PDESystem(equations, bcs, domains, [t, u], [n(t,u), totalPop(t,u)], [ρP, ρM], defaults=Dict([ρUp=>0.1, ρDown=>0.8]))
+    discretization = MOLFiniteDifference([u => du],t)
+    prob = discretize(pdesys, discretization)
+    sol = solve(prob, Tsit5(), saveat=saveat)
+    _u = sol[u]
+    _t = sol[t]
+    n_t_u = sol[n(t, u)]
+    return _t, _u, n_t_u
+end
+
+## ----------------------------------------
+#region - Solve model
+
+# these parameters control the model
+modelParams = (
+    b0 = 0.5, # birth rate
+    d0 = 0.1, # death rate
+    l = 0.01, #√(0.1), # discrete->continuous conversion parameter
+    ρUp = 0.1, # switch rate up
+    ρDown = 0.8, # switch rate down
+    n0 = 50., # initial population size
+    K = 1000, # max population size
 )
-@unpack b0, d0, l, p = params
-paramsAdaptiveTherapy = (
-    K = 1000,
-    ri = 0.,
-    α = 10.,
-    h = 1.
+# these parameters control the solver
+ctrlParams = (
+    du=0.05, # discretization in the phenotype space
+    t0=0., # start time
+    tF=20., # stop time
+    saveat=1., # time step to save at
 )
-@unpack K, ri, α, h = paramsAdaptiveTherapy
 
-# Parameters, variables, and derivatives
-@parameters t u
+@time _t, _u, n_t_u = phenotype1DPDE(modelParams, ctrlParams)
 
-@variables n(..)
-Dt = Differential(t)
-Du = Differential(u)
-Duu = Differential(u)^2
+#endregion
 
-β(u) = b0 + 0.1*u
-δ(u) = d0 #d0 + h/(ri + u*α) # adaptive therapy model
-ρ₊(u) = 0.5
-ρ₋(u) = 0.5
-
-# general phenotype switching equation
-eq  = Dt(n(t, u)) ~ 
-    ( β(u) - δ(u) - l*Du(ρ₊(u)) - l*Du(ρ₋(u)) + l^2/2*Duu(ρ₊(u)) + l^2/2*Duu(ρ₋(u)) ) * n(t,u) + 
-    l*( -ρ₊(u) + ρ₋(u) + l*Du(ρ₊(u)) + l*Du(ρ₋(u)) ) * Du(n(t,u)) +
-    l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
-
-bcs = [
-    n(0, u) ~ 50.,
-    Du(n(t, 0)) ~ 0.0,
-    Du(n(t, 1)) ~ 0.0
-]
-
-# Space and time domains
-domains = [
-    t ∈ (0.0, 20.0),
-    u ∈ (0.0, 1.0),
-]
-
-# PDE system
-@named pdesys = PDESystem(eq, bcs, domains, [t, u], [n(t, u)])
-
-# Method of lines discretization
-du = 0.01
-discretization = MOLFiniteDifference([u => du],t)
-# Convert the PDE problem into an ODE problem
-prob = discretize(pdesys, discretization)
-# Solve ODE problem
-using OrdinaryDiffEq
-sol = solve(prob, Tsit5(), saveat=0.2)
-
-##
-
+## ----------------------------------------
+#region - Plot results
 using CairoMakie
-
-# Plot results and compare with exact solution
-_u = sol[u]
-_t = sol[t]
-n_t_u = sol[n(t, u)]
 
 fig1 = Figure()
 Axis(
@@ -78,9 +83,11 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-for i in 1:5
-    lines!(_u, n_t_u[findfirst(_t.==i*4.),:], label="t=$t")
+for t in [0,5,10,15,20]
+    tInd = findfirst(_t.==t)
+    lines!(_u, n_t_u[tInd,:], label="t=$t")
 end
-# axislegend(position=:lt)
-save("/Users/stein02/Desktop/github/MicroscopicGradientDynamics/test/figures/PDE_distributions.png", fig1)
-#display(fig1)
+axislegend(position=:lt)
+display(fig1)
+
+#endregion

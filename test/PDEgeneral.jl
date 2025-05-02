@@ -24,7 +24,7 @@ function phenotype1DPDE(modelParams::NamedTuple, ctrlParams::NamedTuple)
     equations  = [
         totalPop(t,u) ~ Iu(n(t,u)),
         Dt(n(t, u)) ~ 
-        ( γ(u) - l*Du(ρ₊(u)) - l*Du(ρ₋(u)) + l^2/2*Duu(ρ₊(u)) + l^2/2*Duu(ρ₋(u)) ) * n(t,u) + 
+        ( γ(u) - l*Du(ρ₊(u)) + l*Du(ρ₋(u)) + l^2/2*Duu(ρ₊(u)) + l^2/2*Duu(ρ₋(u)) ) * n(t,u) + 
         l*( -ρ₊(u) + ρ₋(u) + l*Du(ρ₊(u)) + l*Du(ρ₋(u)) ) * Du(n(t,u)) +
         l^2/2*( ρ₊(u) + ρ₋(u) ) * Duu(n(t,u))
     ]
@@ -55,17 +55,17 @@ end
 modelParams = (
     b0 = 0.5, # birth rate
     d0 = 0.1, # death rate
-    l = 0.01, #√(0.1), # discrete->continuous conversion parameter
-    ρUp = 0.1, # switch rate up
-    ρDown = 0.8, # switch rate down
-    n0 = 50., # initial population size
-    K = 1000, # max population size
+    l = 0.02, #√(0.1), # discrete->continuous conversion parameter
+    ρUp = 0.1,#0.1, # switch rate up
+    ρDown = 0.8,#0.8, # switch rate down
+    n0 = 2550., # initial population size
+    K = 10000, # max population size
 )
 # these parameters control the solver
 ctrlParams = (
     du=0.05, # discretization in the phenotype space
     t0=0., # start time
-    tF=20., # stop time
+    tF=10., # stop time
     saveat=1., # time step to save at
 )
 
@@ -83,11 +83,12 @@ Axis(
     xlabel="phenotype",
     ylabel="density of cells",
 )
-for t in [0,5,10,15,20]
+for t in [0,5,10]
     tInd = findfirst(_t.==t)
     lines!(_u, n_t_u[tInd,:], label="t=$t")
 end
 axislegend(position=:lt)
-display(fig1)
+save("test/figures/PDEmodel.png",fig1)
+#display(fig1)
 
 #endregion

@@ -19,8 +19,10 @@ function phenotype1DPDE(modelParams::NamedTuple, ctrlParams::NamedTuple)
     δ(u) = d0
     # δ(u) = d0 + h/(ri + u*α) # adaptive therapy model: not implemented here
     γ(u) = (β(u) - δ(u))*(1-totalPop(t,u)/K)
-    ρ₊(u) = ρUp
-    ρ₋(u) = ρDown
+
+    #Sigmoid(x,mean,scale) = (1 + ( (x*(1-mean))/(mean*(1-x)) )^(-scale) )^(-1)
+    ρ₊(u) = ρUp #* ( 1-Sigmoid(u,0.05,10.0) )
+    ρ₋(u) = ρDown #* Sigmoid(u,0.95,10.0)
 
     equations  = [
         totalPop(t,u) ~ Iu(n(t,u)),
@@ -39,8 +41,8 @@ function phenotype1DPDE(modelParams::NamedTuple, ctrlParams::NamedTuple)
         n(0.0, u) ~ n0,
         #-( l^2/2*( ρ₊(uMin) + ρ₋(uMin) ) * Du(n(t,uMin)) ) + ( l*(ρ₊(uMin) - ρ₋(uMin)) + l^2/2*( Du(ρ₊(uMin)) + Du(ρ₋(uMin)) ) ) * n(t,uMin) ~ 0.0,
         #-( l^2/2*( ρ₊(uMax) + ρ₋(uMax) ) * Du(n(t,uMax)) ) + ( l*(ρ₊(uMax) - ρ₋(uMax)) + l^2/2*( Du(ρ₊(uMax)) + Du(ρ₋(uMax)) ) ) * n(t,uMax) ~ 0.0
-        -( l^2/2*( ρ₊(uMin) + ρ₋(uMin) ) * Du(n(t,uMin)) ) + ( l*(ρ₊(uMin) - ρ₋(uMin)) )*n(t,uMin) ~ 0.0,
-        -( l^2/2*( ρ₊(uMax) + ρ₋(uMax) ) * Du(n(t,uMax)) ) + ( l*(ρ₊(uMax) - ρ₋(uMax)) )*n(t,uMax) ~ 0.0
+        -( l^2/2*( ρ₊(uMin) + ρ₋(uMin) ) * Du(n(t,uMin)) ) + ( l*(ρ₊(uMin) - ρ₋(uMin)) * n(t,uMin) ) ~ 0.0,
+        -( l^2/2*( ρ₊(uMax) + ρ₋(uMax) ) * Du(n(t,uMax)) ) + ( l*(ρ₊(uMax) - ρ₋(uMax)) * n(t,uMax) ) ~ 0.0
     ]
 
     domains = [
@@ -98,7 +100,28 @@ for t in [0,5,10]
     lines!(_u, n_t_u[tInd,:], label="t=$t")
 end
 axislegend(position=:lt)
-save("test/figures/PDEmodel.png",fig1)
+ylims!(0,14000)
 #display(fig1)
+save("test/figures/PDEmodel.png",fig1)
 
 #endregion
+
+
+### Plot transition functions
+"""
+Sigmoid(x,mean,scale) = (1 + ( (x*(1-mean))/(mean*(1-x)) )^(-scale) )^(-1)
+xvec = range(0.0, 1.0, 100)
+yvec1 = [0.2*Sigmoid(x, 0.05, 10.0) for x in xvec]
+yvec2 = [0.5*(1- Sigmoid(x, 0.95, 10.0)) for x in xvec]
+
+fig2 = Figure()
+Axis(
+    fig2[1,1],
+    xlabel="rho",
+    ylabel="u-space",
+)
+lines!(xvec, yvec1, label = "Sigmoid")
+lines!(xvec, yvec2, label = "1-Sigmoid")
+axislegend(position=:lt)
+display(fig2)
+"""

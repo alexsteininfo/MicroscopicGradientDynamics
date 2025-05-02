@@ -1,26 +1,6 @@
 # title: Birth-death process with transitions
 # author: alexander stein
 
-### Initial condition
-# kspace - allowed values of trait k
-# n_init - initial pop sizes in state k 
-# t_init - initial time for simulation
-# t_eps - time steps at which pop size is saved
-
-### Stopping criteria
-# pop_max
-# pop_min
-# t_max
-
-### Growth functions
-# b(k,N) birth function
-# d(k,N) death function
-
-### Transition functions
-# rp(k) upward transition function
-#   implementation forces rp(k_max)=0
-# rm(k) downward transition function
-#   implementation forces rm(k_min)=0
 
 using DifferentialEquations, Catalyst
 
@@ -43,7 +23,8 @@ function phenotypeBD(modelParams::NamedTuple, ctrlParams::NamedTuple)
     end
     push!(reactions, Reaction(zerorate, [N], [N], [1], [2]))
     push!(reactions, Reaction(zerorate, [E], [E], [1], [2]))
-    # Actual reactions
+    
+    # Birth, death and competition reactions
     for i in 1:L
         push!(reactions, Reaction(birthrates[i], [S[i]], [S[i],N], [1], [2,1]))
         push!(reactions, Reaction(deathrates[i], [S[i]], [S[i],N], [1], [0,-1]))
@@ -54,10 +35,13 @@ function phenotypeBD(modelParams::NamedTuple, ctrlParams::NamedTuple)
         #i!=L ? push!(reactions, Reaction(rhoplus[i], [S[i]], [S[i+1]])) : push!(reactions, Reaction(rhominus[1], [E], [E], [1], [2]))
     end
 
+    # Phenotypic switching reactions
+    #push!(reactions, Reaction(rhominus[L], [S[1]], [S[1],N], [1], [0,-1]))
     for i in 2:L
         push!(reactions, Reaction(rhominus[i], [S[i]], [S[i-1]]))
     end
 
+    #push!(reactions, Reaction(rhoplus[L], [S[L]], [S[L],N], [1], [0,-1]))
     for i in 1:(L-1)
         push!(reactions, Reaction(rhoplus[i], [S[i]], [S[i+1]]))
     end
@@ -152,6 +136,7 @@ for t in [0,5,10]
     lines!(_u, n_t_u_mean[tInd,:], label="t=$t")
 end
 axislegend(position=:lt)
+ylims!(0,14000)
 #display(fig1)
 save("test/figures/BDmodel.png",fig1)
 

@@ -4,3 +4,5 @@ MicroscopicFitnessDynamics.code-workspace
 
 test.jl
 
+Manifest.toml
+Project.toml
